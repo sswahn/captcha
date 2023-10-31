@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Canvas Shape CAPTCHA</title>
+  <style>
+    .captcha-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      margin-top: 50px;
+    }
+
+    .captcha-image {
+      max-width: 500px;
+      width: 100%;
+      border: 1px solid #000;
+      margin: 0 15px;
+      margin-bottom: 10px;
+    }
+
+    .captcha-button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+
+    .captcha-timer {
+      margin-top: 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="captcha-container">
+    <canvas class="captcha-image" id="captcha-image"></canvas>
+    <div>
+      <button class="captcha-button" id="shape1-button">pentagon</button>
+      <button class="captcha-button" id="shape2-button">star</button>
+      <button class="captcha-button" id="shape3-button">heart</button>
+    </div>
+    <div class="captcha-timer" id="captcha-timer">Time Remaining: </div>
+  </div>
+
+  <script>
+    const shapeOptions = ['pentagon', 'star', 'heart'];
+    const canvasSize = { width: 500, height: 200 };
+    const minShapeSize = 30;
+    const maxShapeSize = 100;
+    const shapeSpacing = 0;
+    const delay = 400;
+    const captchaDuration = 10; // Duration in seconds for the user to complete the CAPTCHA
+    let captchaShapes = [];
+    let currentShapeIndex = 0;
+    let timerInterval;
+
+    function renderShapes() {
+      const canvas = document.getElementById('captcha-image');
+      const context = canvas.getContext('2d');
+      const startX = (canvas.width - (captchaShapes.length * (maxShapeSize + shapeSpacing) - shapeSpacing)) / 2;
+
+      context.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Generate random gradient for the background
+      const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, getRandomColor());
+      gradient.addColorStop(1, getRandomColor());
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < captchaShapes.length; i++) {
+        const shapeX = startX + (i * (maxShapeSize + shapeSpacing));
+        const shapeY = getRandomInt(minShapeSize, canvas.height - maxShapeSize - minShapeSize);
+        const shapeSize = getRandomInt(minShapeSize, maxShapeSize);
+        const shape = captchaShapes[i];
+
+        // Generate random gradient for the shape
+        const shapeGradient = context.createLinearGradient(shapeX, shapeY, shapeX + shapeSize, shapeY + shapeSize);
+        shapeGradient.addColorStop(0, getRandomColor());
+        shapeGradient.addColorStop(1, getRandomColor());
+        context.fillStyle = shapeGradient;
+
+        switch (shape) {
+
+          case 'pentagon':
+            drawPentagon(context, shapeX + shapeSize / 2, shapeY + shapeSize / 2, shapeSize / 2);
+            break;
+          case 'star':
+            drawStar(context, shapeX + shapeSize / 2, shapeY + shapeSize / 2, shapeSize / 2);
+            break;
+          case 'heart':
+            drawHeart(context, shapeX + shapeSize / 2, shapeY + shapeSize / 2, shapeSize / 2);
+            break;
+        }
+      }
+    }
+
+    function drawPentagon(context, x, y, radius) {
+      context.beginPath();
+      context.moveTo(x + radius * Math.cos(0), y + radius * Math.sin(0));
+      for (let i = 1; i <= 5; i++) {
+        context.lineTo(x + radius * Math.cos((i * 2 * Math.PI) / 5), y + radius * Math.sin((i * 2 * Math.PI) / 5));
+      }
+      context.closePath();
+      context.fill();
+    }
+
+    function drawStar(context, x, y, radius) {
+      context.beginPath();
+      context.moveTo(x + radius * Math.cos(0), y + radius * Math.sin(0));
+      for (let i = 1; i <= 5; i++) {
+        context.lineTo(x + radius * Math.cos((i * 4 * Math.PI) / 5), y + radius * Math.sin((i * 4 * Math.PI) / 5));
+      }
+      context.closePath();
+      context.fill();
+    }
+
+    function drawHeart(context, x, y, radius) {
+      context.beginPath();
+      context.moveTo(x, y + radius);
+      context.bezierCurveTo(x + radius, y - radius, x + 4 * radius, y + radius, x, y + 4 * radius);
+      context.bezierCurveTo(x - 4 * radius, y + radius, x - radius, y - radius, x, y + radius);
+      context.closePath();
+      context.fill();
+    }
+
+    function generateCaptcha() {
+      captchaShapes = [];
+
+      // Generate three random shape indices
+      const shapeIndices = [];
+      while (shapeIndices.length < 3) {
+        const randomIndex = Math.floor(Math.random() * shapeOptions.length);
+        if (!shapeIndices.includes(randomIndex)) {
+          shapeIndices.push(randomIndex);
+        }
+      }
+
+      // Push three different shapes
+      shapeIndices.forEach(index => {
+        captchaShapes.push(shapeOptions[index]);
+      });
+
+      // Push two more random shapes
+      for (let i = 0; i < 2; i++) {
+        const randomIndex = Math.floor(Math.random() * shapeOptions.length);
+        captchaShapes.push(shapeOptions[randomIndex]);
+      }
+    }
+
+    function handleButtonClick(clickedShape) {
+      const currentShape = captchaShapes[currentShapeIndex];
+
+      if (clickedShape === currentShape) {
+        currentShapeIndex++;
+
+        if (currentShapeIndex === captchaShapes.length) {
+          clearInterval(timerInterval);
+          alert('CAPTCHA validation successful!');
+          resetCaptcha();
+        }
+      } else {
+        alert('CAPTCHA validation failed. Please try again.');
+        resetCaptcha();
+      }
+    }
+
+    function startTimer(duration) {
+      const timerDisplay = document.getElementById('captcha-timer');
+      let timeRemaining = duration;
+
+      timerInterval = setInterval(() => {
+        timeRemaining--;
+        timerDisplay.textContent = `Time Remaining: ${timeRemaining} seconds`;
+
+        if (timeRemaining <= 0) {
+          clearInterval(timerInterval);
+          //alert('CAPTCHA validation failed. Time expired.');
+          resetCaptcha();
+        }
+      }, 1000);
+    }
+
+    function resetCaptcha() {
+      clearInterval(timerInterval);
+      currentShapeIndex = 0;
+      generateCaptcha();
+      renderShapes();
+      startTimer(captchaDuration);
+    }
+
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1) + min);
+    }
+
+    function getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    }
+
+    window.onload = function() {
+      const canvas = document.getElementById('captcha-image');
+      canvas.width = canvasSize.width;
+      canvas.height = canvasSize.height;
+
+      generateCaptcha();
+      renderShapes();
+      startTimer(captchaDuration);
+
+      const shape1Button = document.getElementById('shape1-button');
+      const shape2Button = document.getElementById('shape2-button');
+      const shape3Button = document.getElementById('shape3-button');
+
+      shape1Button.addEventListener('click', () => {
+        shape1Button.disabled = true;
+        shape2Button.disabled = true;
+        shape3Button.disabled = true;
+
+        setTimeout(() => {
+          shape1Button.disabled = false;
+          shape2Button.disabled = false;
+          shape3Button.disabled = false;
+          handleButtonClick('pentagon');
+        }, delay);
+      });
+
+      shape2Button.addEventListener('click', () => {
+        shape1Button.disabled = true;
+        shape2Button.disabled = true;
+        shape3Button.disabled = true;
+
+        setTimeout(() => {
+          shape1Button.disabled = false;
+          shape2Button.disabled = false;
+          shape3Button.disabled = false;
+          handleButtonClick('star');
+        }, delay);
+      });
+
+      shape3Button.addEventListener('click', () => {
+        shape1Button.disabled = true;
+        shape2Button.disabled = true;
+        shape3Button.disabled = true;
+
+        setTimeout(() => {
+          shape1Button.disabled = false;
+          shape2Button.disabled = false;
+          shape3Button.disabled = false;
+          handleButtonClick('heart');
+        }, delay);
+      });
+    };
+  </script>
+</body>
+</html>
