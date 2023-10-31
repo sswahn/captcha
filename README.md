@@ -13,5 +13,3 @@ The provided CAPTCHA is a visual challenge designed to verify that a user is hum
 - **User Interaction:** Users must click on the correct shapes in a specific order to complete the CAPTCHA successfully.
 
 - **Feedback:** The CAPTCHA provides feedback to the user by indicating whether they clicked on the correct shapes or not.
-
-- **Challenges:** The CAPTCHA presents a set of shapes, some of which are not required to be clicked, adding complexity to the challenge.
